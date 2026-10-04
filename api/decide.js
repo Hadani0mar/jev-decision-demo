@@ -9,13 +9,55 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: "TYPESAFE_API_KEY is not configured." });
   }
 
-  const text = typeof req.body?.text === "string" ? req.body.text.trim() : "";
-  if (!text) {
-    return res.status(400).json({ error: "اكتب نصًا أولاً." });
+  const body = req.body || {};
+  const context = typeof body.context === "string" ? body.context.trim() : "";
+  const question = typeof body.question === "string" ? body.question.trim() : "";
+  const rawOptions = Array.isArray(body.options) ? body.options : [];
+
+  if (!question) {
+    return res.status(400).json({ error: "سؤال القرار مطلوب." });
   }
-  if (text.length > 12000) {
-    return res.status(400).json({ error: "النص طويل جدًا لهذه التجربة." });
+  if (question.length > 2000) {
+    return res.status(400).json({ error: "سؤال القرار طويل جدًا." });
   }
+  if (context.length > 20000) {
+    return res.status(400).json({ error: "السياق طويل جدًا لهذه التجربة." });
+  }
+  if (rawOptions.length < 2) {
+    return res.status(400).json({ error: "يجب توفير خيارين على الأقل." });
+  }
+  if (rawOptions.length > 12) {
+    return res.status(400).json({ error: "هذه الواجهة تدعم حتى 12 خيارًا." });
+  }
+
+  const options = rawOptions.map((item) => ({
+    label: typeof item?.label === "string" ? item.label.trim() : "",
+    description: typeof item?.description === "string" ? item.description.trim() : ""
+  }));
+
+  if (options.some((o) => !o.label)) {
+    return res.status(400).json({ error: "كل خيار يجب أن يحتوي على اسم." });
+  }
+  if (options.some((o) => o.label.length > 120 || o.description.length > 1000)) {
+    return res.status(400).json({ error: "أحد الخيارات أو أوصافه أطول من الحد المسموح." });
+  }
+
+  const normalized = options.map((o) => o.label.toLocaleLowerCase());
+  if (new Set(normalized).size !== normalized.length) {
+    return res.status(400).json({ error: "أسماء الخيارات يجب أن تكون مختلفة." });
+  }
+
+  const reserved = new Set(["__proto__", "prototype", "constructor"]);
+  if (options.some((o) => reserved.has(o.label))) {
+    return res.status(400).json({ error: "اسم خيار غير مسموح." });
+  }
+
+  const criteria = Object.create(null);
+  for (const option of options) {
+    criteria[option.label] = option.description || null;
+  }
+
+  const state = context || "No additional context was provided. Base the decision on the question and option criteria.";
 
   try {
     const upstream = await fetch("https://api.typesafe.ai/v1/systemone", {
@@ -26,40 +68,39 @@ module.exports = async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "jev-latest",
-        state: text,
+        state,
         questions: {
           decision: {
             type: "choice",
-            instructions: "Choose the best operational decision for the supplied user text. Decide whether software should proceed, require human review, or reject the proposed action.",
-            criteria: {
-              execute: "The action is clear enough and reasonable to carry out as stated without additional review.",
-              review: "The text is ambiguous, incomplete, uncertain, or should be checked by a human before acting.",
-              reject: "The action should not be carried out based on the supplied text because it is clearly unsuitable, contradictory, or inappropriate."
-            }
+            instructions: question,
+            criteria
           }
         }
       })
     });
 
     const data = await upstream.json().catch(() => ({}));
+
     if (!upstream.ok) {
-      const detail = data?.detail
-        ? JSON.stringify(data.detail)
-        : data?.message || `TypeSafe API returned ${upstream.status}`;
+      const detail =
+        typeof data?.detail === "string" ? data.detail :
+        data?.detail ? JSON.stringify(data.detail) :
+        data?.message || `TypeSafe API returned ${upstream.status}`;
       return res.status(upstream.status).json({ error: detail });
     }
 
     const answer = data?.answers?.decision;
-    if (!answer || answer.type !== "choice") {
-      return res.status(502).json({ error: "Unexpected response from JEV." });
+    if (!answer || answer.type !== "choice" || typeof answer.choice !== "string") {
+      return res.status(502).json({ error: "استجابة غير متوقعة من JEV." });
     }
 
     return res.status(200).json({
       decision: answer.choice,
-      confidence: answer.confidence,
-      probabilities: answer.probabilities,
+      confidence: Number(answer.confidence || 0),
+      probabilities: answer.probabilities || {},
+      options: options.map((o) => o.label),
       model: data.model,
-      usage: data.usage
+      usage: data.usage || {}
     });
   } catch (error) {
     return res.status(500).json({
