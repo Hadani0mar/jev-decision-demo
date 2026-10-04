@@ -3,115 +3,526 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>JEV Decision Lab</title>
-  <meta name="description" content="اختبر قرارات JEV بين أي مجموعة خيارات مع احتمالات وثقة القرار." />
+  <title>JEV Decision Studio</title>
+  <meta name="description" content="واجهة احترافية لاتخاذ القرارات باستخدام TypeSafe AI JEV." />
   <style>
     :root{
-      font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,sans-serif;
-      color-scheme:dark;
-      --bg:#09090b;--panel:#111114;--panel2:#18181b;--line:#2b2b31;
-      --muted:#a1a1aa;--soft:#71717a;--text:#fafafa;--accent:#fafafa;
+      --ds-background-brand-bold:#0c66e4;
+      --ds-background-brand-bold-hover:#0b5bd3;
+      --ds-text:#172b4d;
+      --ds-text-subtle:#44546f;
+      --ds-text-subtlest:#626f86;
+      --ds-surface:#ffffff;
+      --ds-surface-sunken:#f7f8f9;
+      --ds-surface-raised:#ffffff;
+      --ds-border:#dcdfe4;
+      --ds-border-input:#8590a2;
+      --ds-danger:#c9372c;
+      --ds-success:#22a06b;
+      --ds-warning:#e56910;
+      --ds-discovery:#8270db;
+
+      --space-1:2px;
+      --space-2:4px;
+      --space-3:8px;
+      --space-4:12px;
+      --space-5:16px;
+      --space-6:24px;
+      --space-7:32px;
+
+      --radius:3px;
+      --radius-rounded:8px;
+      --radius-pill:9999px;
+
+      --shadow-raised:0 1px 1px rgba(9,30,66,.25),0 0 1px rgba(9,30,66,.31);
+      --shadow-overlay:0 8px 12px rgba(9,30,66,.15),0 0 1px rgba(9,30,66,.31);
+
+      --motion:200ms cubic-bezier(.15,1,.3,1);
+
+      --font-body:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Tahoma,Arial,sans-serif;
+      --font-mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
     }
+
     *{box-sizing:border-box}
-    body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);padding:28px}
-    .shell{width:min(880px,100%);margin:0 auto}
-    header{padding:14px 2px 24px;border-bottom:1px solid var(--line);margin-bottom:24px}
-    .eyebrow{font-size:13px;color:var(--muted);margin-bottom:8px}
-    h1{margin:0 0 8px;font-size:clamp(30px,5vw,48px);letter-spacing:-.04em}
-    .sub{margin:0;color:var(--muted);line-height:1.8;max-width:760px}
-    .card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:22px;margin-bottom:18px}
-    label{display:block;font-weight:700;margin-bottom:9px}
-    .help{font-size:12px;color:var(--soft);margin-top:7px;line-height:1.6}
-    input,textarea{
-      width:100%;border:1px solid #3f3f46;border-radius:14px;background:var(--panel2);
-      color:#fff;padding:13px 14px;font:inherit;outline:none
+    html{background:var(--ds-surface-sunken)}
+    body{
+      margin:0;
+      min-height:100vh;
+      background:var(--ds-surface-sunken);
+      color:var(--ds-text);
+      font-family:var(--font-body);
+      font-size:14px;
+      line-height:20px;
     }
-    input:focus,textarea:focus{border-color:#71717a;box-shadow:0 0 0 3px rgba(113,113,122,.14)}
-    textarea{min-height:130px;resize:vertical;line-height:1.7}
-    #context{min-height:170px}
-    .section-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
-    .section-title h2{font-size:18px;margin:0}
-    .options{display:grid;gap:12px}
+
+    button,input,textarea{font:inherit}
+    button{cursor:pointer}
+    button:focus-visible,input:focus-visible,textarea:focus-visible{
+      outline:3px solid rgba(12,102,228,.24);
+      outline-offset:1px;
+    }
+
+    .topbar{
+      position:sticky;
+      top:0;
+      z-index:20;
+      height:64px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:var(--space-5);
+      padding:0 var(--space-6);
+      background:rgba(255,255,255,.96);
+      backdrop-filter:blur(10px);
+      border-bottom:1px solid var(--ds-border);
+    }
+
+    .brand{display:flex;align-items:center;gap:var(--space-4);min-width:0}
+    .brand-mark{
+      width:32px;height:32px;border-radius:var(--radius-rounded);
+      display:grid;place-items:center;
+      color:#fff;background:var(--ds-background-brand-bold);
+      font-weight:800;letter-spacing:-.04em;
+      box-shadow:var(--shadow-raised);
+    }
+    .brand-copy{min-width:0}
+    .brand-title{font-weight:700;font-size:16px;line-height:20px;white-space:nowrap}
+    .brand-sub{font-size:11px;line-height:16px;color:var(--ds-text-subtlest);white-space:nowrap}
+
+    .status{
+      display:inline-flex;align-items:center;gap:var(--space-3);
+      padding:6px 10px;border-radius:var(--radius-pill);
+      border:1px solid var(--ds-border);
+      color:var(--ds-text-subtle);
+      background:var(--ds-surface);
+      font-size:11px;line-height:16px;
+      white-space:nowrap;
+    }
+    .status-dot{width:7px;height:7px;border-radius:50%;background:var(--ds-success)}
+
+    .page{
+      width:min(1220px,calc(100% - 40px));
+      margin:0 auto;
+      padding:var(--space-7) 0 48px;
+    }
+
+    .hero{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:var(--space-6);
+      margin-bottom:var(--space-6);
+    }
+    .eyebrow{
+      color:var(--ds-background-brand-bold);
+      font-size:11px;
+      line-height:16px;
+      font-weight:700;
+      letter-spacing:.06em;
+      text-transform:uppercase;
+      margin-bottom:var(--space-3);
+    }
+    h1{
+      margin:0;
+      font-size:36px;
+      line-height:40px;
+      letter-spacing:-.035em;
+      font-weight:750;
+    }
+    .hero p{
+      margin:var(--space-3) 0 0;
+      color:var(--ds-text-subtle);
+      max-width:720px;
+    }
+    .hero-actions{display:flex;gap:var(--space-3);flex-wrap:wrap}
+
+    .layout{
+      display:grid;
+      grid-template-columns:minmax(0,1.55fr) minmax(320px,.8fr);
+      gap:var(--space-6);
+      align-items:start;
+    }
+
+    .panel{
+      background:var(--ds-surface);
+      border:1px solid var(--ds-border);
+      border-radius:var(--radius-rounded);
+      box-shadow:var(--shadow-raised);
+    }
+
+    .panel-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:var(--space-4);
+      padding:var(--space-5) var(--space-6);
+      border-bottom:1px solid var(--ds-border);
+    }
+    .panel-title{
+      margin:0;
+      font-size:16px;
+      line-height:20px;
+      font-weight:700;
+    }
+    .panel-caption{
+      margin-top:2px;
+      color:var(--ds-text-subtlest);
+      font-size:11px;
+      line-height:16px;
+    }
+
+    .form-section{
+      padding:var(--space-6);
+      border-bottom:1px solid var(--ds-border);
+    }
+    .form-section:last-child{border-bottom:0}
+    .step-row{display:flex;align-items:flex-start;gap:var(--space-4)}
+    .step{
+      flex:0 0 28px;
+      width:28px;height:28px;
+      border-radius:var(--radius-pill);
+      display:grid;place-items:center;
+      background:#e9f2ff;
+      color:var(--ds-background-brand-bold);
+      font-size:12px;
+      font-weight:800;
+      margin-top:1px;
+    }
+    .step-content{flex:1;min-width:0}
+    .field-label{
+      display:block;
+      margin-bottom:var(--space-3);
+      font-weight:650;
+      color:var(--ds-text);
+    }
+    .field-help{
+      color:var(--ds-text-subtlest);
+      font-size:11px;
+      line-height:16px;
+      margin-top:var(--space-3);
+    }
+    code{
+      padding:1px 4px;
+      border-radius:var(--radius);
+      background:#f1f2f4;
+      color:#44546f;
+      font-family:var(--font-mono);
+      font-size:11px;
+    }
+
+    textarea,input{
+      width:100%;
+      color:var(--ds-text);
+      background:var(--ds-surface);
+      border:1px solid var(--ds-border-input);
+      border-radius:var(--radius);
+      padding:9px 10px;
+      transition:border-color var(--motion),box-shadow var(--motion),background var(--motion);
+    }
+    textarea:hover,input:hover{background:#fafbfc}
+    textarea:focus,input:focus{
+      border-color:var(--ds-background-brand-bold);
+      background:var(--ds-surface);
+      box-shadow:0 0 0 1px var(--ds-background-brand-bold);
+      outline:none;
+    }
+    textarea{min-height:150px;resize:vertical;line-height:20px}
+    #question{min-height:40px}
+
+    .options-toolbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:var(--space-4);
+      margin-bottom:var(--space-4);
+    }
+    .options-count{
+      color:var(--ds-text-subtlest);
+      font-size:11px;
+      line-height:16px;
+    }
+    .options{display:grid;gap:var(--space-3)}
     .option{
-      display:grid;grid-template-columns:1fr 1.5fr auto;gap:10px;align-items:start;
-      padding:12px;border:1px solid var(--line);border-radius:16px;background:#141417
+      display:grid;
+      grid-template-columns:32px minmax(130px,.8fr) minmax(180px,1.3fr) auto;
+      gap:var(--space-3);
+      align-items:center;
+      padding:var(--space-3);
+      border:1px solid var(--ds-border);
+      border-radius:var(--radius-rounded);
+      background:var(--ds-surface-sunken);
+      transition:border-color var(--motion),background var(--motion);
     }
-    .option input{min-width:0}
-    button{
-      border:0;border-radius:13px;padding:11px 16px;font-weight:750;font-size:14px;cursor:pointer
+    .option:hover{border-color:#b7bdc8;background:#fbfcfd}
+    .option-index{
+      width:24px;height:24px;border-radius:var(--radius-pill);
+      display:grid;place-items:center;
+      color:var(--ds-text-subtle);
+      background:#dfe1e6;
+      font-size:11px;font-weight:700;
     }
-    button.primary{background:var(--accent);color:#09090b;padding:13px 21px}
-    button.secondary{background:#27272a;color:#fafafa;border:1px solid #3f3f46}
-    button.ghost{background:transparent;color:#a1a1aa;border:1px solid #3f3f46}
-    button.danger{background:transparent;color:#fca5a5;border:1px solid #4c1d1d;padding:11px 12px}
-    button:disabled{opacity:.5;cursor:not-allowed}
-    .actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px}
-    .error{display:none;margin-top:14px;color:#fecaca;background:#2a1111;border:1px solid #7f1d1d;padding:12px 14px;border-radius:12px;white-space:pre-wrap}
+
+    .btn{
+      min-height:36px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:var(--space-3);
+      border:1px solid transparent;
+      border-radius:var(--radius);
+      padding:7px 12px;
+      font-weight:650;
+      transition:background var(--motion),border-color var(--motion),transform var(--motion);
+    }
+    .btn:active{transform:translateY(1px)}
+    .btn-primary{background:var(--ds-background-brand-bold);color:#fff}
+    .btn-primary:hover{background:var(--ds-background-brand-bold-hover)}
+    .btn-secondary{background:#f1f2f4;color:var(--ds-text)}
+    .btn-secondary:hover{background:#dcdfe4}
+    .btn-subtle{background:transparent;color:var(--ds-text-subtle);border-color:var(--ds-border)}
+    .btn-subtle:hover{background:#f1f2f4}
+    .btn-danger{background:transparent;color:var(--ds-danger);padding-inline:10px}
+    .btn-danger:hover{background:#ffebe6}
+    .btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+
+    .form-actions{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:var(--space-4);
+      flex-wrap:wrap;
+    }
+    .secure-note{
+      display:flex;
+      align-items:center;
+      gap:var(--space-3);
+      color:var(--ds-text-subtlest);
+      font-size:11px;
+    }
+    .shield{
+      width:20px;height:20px;border-radius:50%;
+      display:grid;place-items:center;
+      background:#dcfff1;color:var(--ds-success);
+      font-size:12px;font-weight:800;
+    }
+
+    .error{
+      display:none;
+      margin-top:var(--space-4);
+      padding:var(--space-4);
+      border:1px solid #ffbdad;
+      border-radius:var(--radius-rounded);
+      background:#ffebe6;
+      color:#ae2e24;
+      white-space:pre-wrap;
+    }
+
+    .result-panel{
+      position:sticky;
+      top:88px;
+      overflow:hidden;
+    }
+    .result-empty{
+      padding:48px var(--space-6);
+      text-align:center;
+      color:var(--ds-text-subtlest);
+    }
+    .result-icon{
+      width:48px;height:48px;border-radius:var(--radius-rounded);
+      display:grid;place-items:center;
+      margin:0 auto var(--space-4);
+      background:#e9f2ff;color:var(--ds-background-brand-bold);
+      font-size:22px;font-weight:800;
+    }
+    .result-empty strong{display:block;color:var(--ds-text);margin-bottom:var(--space-2)}
+
     #result{display:none}
-    .winner{font-size:clamp(30px,6vw,52px);font-weight:850;letter-spacing:-.04em;margin:4px 0 6px}
-    .confidence{color:var(--muted);margin-bottom:20px}
-    .bars{display:grid;gap:12px}
-    .barline{display:grid;grid-template-columns:minmax(110px,180px) 1fr 58px;gap:12px;align-items:center}
-    .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .track{height:10px;background:#2b2b31;border-radius:999px;overflow:hidden}
-    .fill{height:100%;background:#e4e4e7;border-radius:999px;transition:width .35s ease}
-    .meta{margin-top:20px;padding-top:16px;border-top:1px solid var(--line);display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--soft)}
-    .badge{display:inline-flex;align-items:center;gap:7px;border:1px solid #3f3f46;border-radius:999px;padding:7px 10px;color:#d4d4d8;font-size:12px}
-    @media(max-width:700px){
-      body{padding:16px}.card{padding:16px}.option{grid-template-columns:1fr}
-      .option .danger{justify-self:start}.barline{grid-template-columns:92px 1fr 48px}
+    .result-main{padding:var(--space-6)}
+    .winner-label{
+      color:var(--ds-text-subtlest);
+      font-size:11px;line-height:16px;
+      font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+    }
+    .winner{
+      margin:var(--space-2) 0 var(--space-3);
+      font-size:24px;line-height:28px;
+      font-weight:750;
+      color:var(--ds-text);
+      overflow-wrap:anywhere;
+    }
+    .confidence{
+      display:inline-flex;align-items:center;gap:var(--space-3);
+      padding:6px 9px;
+      border-radius:var(--radius);
+      background:#dcfff1;
+      color:#216e4e;
+      font-size:11px;line-height:16px;font-weight:650;
+      margin-bottom:var(--space-5);
+    }
+
+    .prob-title{
+      margin:0 0 var(--space-4);
+      font-size:14px;line-height:20px;font-weight:700;
+    }
+    .bars{display:grid;gap:var(--space-4)}
+    .barline{display:grid;gap:6px}
+    .barhead{display:flex;align-items:center;justify-content:space-between;gap:var(--space-3)}
+    .barname{font-weight:600;color:var(--ds-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .barpct{font-family:var(--font-mono);font-size:11px;color:var(--ds-text-subtle)}
+    .track{height:8px;background:#dcdfe4;border-radius:var(--radius-pill);overflow:hidden}
+    .fill{height:100%;background:var(--ds-background-brand-bold);border-radius:var(--radius-pill);transition:width .35s ease}
+    .fill.winner-fill{background:var(--ds-success)}
+
+    .meta{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      border-top:1px solid var(--ds-border);
+      background:var(--ds-surface-sunken);
+    }
+    .meta-item{padding:var(--space-4) var(--space-5);border-left:1px solid var(--ds-border)}
+    .meta-item:nth-child(even){border-left:0}
+    .meta-key{font-size:11px;line-height:16px;color:var(--ds-text-subtlest)}
+    .meta-value{font-family:var(--font-mono);font-size:11px;color:var(--ds-text);margin-top:2px}
+
+    .footer-note{
+      margin-top:var(--space-6);
+      text-align:center;
+      color:var(--ds-text-subtlest);
+      font-size:11px;
+      line-height:16px;
+    }
+
+    @media(max-width:900px){
+      .layout{grid-template-columns:1fr}
+      .result-panel{position:static}
+      .hero{align-items:flex-start;flex-direction:column}
+    }
+    @media(max-width:680px){
+      .topbar{padding:0 var(--space-5)}
+      .page{width:min(100% - 24px,1220px);padding-top:var(--space-6)}
+      h1{font-size:28px;line-height:32px}
+      .panel-header,.form-section,.result-main{padding:var(--space-5)}
+      .option{grid-template-columns:28px 1fr auto}
+      .option .opt-desc{grid-column:2/4}
+      .brand-sub{display:none}
+      .status{display:none}
     }
   </style>
 </head>
 <body>
-  <main class="shell">
-    <header>
-      <div class="eyebrow">TypeSafe AI · JEV</div>
-      <h1>JEV Decision Lab</h1>
-      <p class="sub">اكتب السياق، حدّد سؤال القرار، وأضف الخيارات. JEV يختار خيارًا واحدًا ويعرض توزيع الاحتمالات والثقة في القرار.</p>
-    </header>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">J</div>
+      <div class="brand-copy">
+        <div class="brand-title">JEV Decision Studio</div>
+        <div class="brand-sub">Structured decision workspace</div>
+      </div>
+    </div>
+    <div class="status"><span class="status-dot"></span> TypeSafe AI متصل</div>
+  </header>
 
-    <section class="card">
-      <label for="context">1) السياق</label>
-      <textarea id="context" maxlength="20000" placeholder="صف المشروع أو الحالة أو المعلومات التي يجب أن يعتمد عليها القرار..."></textarea>
-      <div class="help">هذا هو <code>state</code> الذي يقرأه JEV قبل اتخاذ القرار.</div>
+  <main class="page">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">Decision workspace</div>
+        <h1>حوّل السياق إلى قرار واضح</h1>
+        <p>اكتب المعلومات المهمة، حدّد سؤال القرار، ثم أضف الخيارات. JEV يقارنها ويرجع الخيار الأفضل مع الاحتمالات والثقة.</p>
+      </div>
+      <div class="hero-actions">
+        <button id="example" class="btn btn-secondary" type="button">تحميل مثال Supabase / Firebase</button>
+      </div>
     </section>
 
-    <section class="card">
-      <label for="question">2) سؤال القرار</label>
-      <input id="question" maxlength="2000" placeholder="مثال: أي Backend هو الأنسب لهذا المشروع؟" />
-      <div class="help">اكتب سؤالًا واحدًا واضحًا يطلب اختيار أفضل خيار.</div>
-    </section>
-
-    <section class="card">
-      <div class="section-title">
-        <div>
-          <h2>3) الخيارات</h2>
-          <div class="help">يمكن إضافة وصف يوضح متى يجب اختيار كل خيار.</div>
+    <div class="layout">
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">إعداد القرار</h2>
+            <div class="panel-caption">كلما كان السياق والخيارات أوضح، كان القرار أدق.</div>
+          </div>
         </div>
-        <button id="addOption" class="secondary" type="button">+ إضافة خيار</button>
-      </div>
-      <div id="options" class="options"></div>
-      <div class="actions">
-        <button id="example" class="ghost" type="button">تحميل مثال Supabase / Firebase</button>
-      </div>
-    </section>
 
-    <section class="card">
-      <div class="actions" style="margin-top:0">
-        <button id="go" class="primary" type="button">اتخذ القرار</button>
-        <span class="badge">المفتاح محفوظ Server-side</span>
-      </div>
-      <div id="error" class="error"></div>
-    </section>
+        <div class="form-section">
+          <div class="step-row">
+            <div class="step">1</div>
+            <div class="step-content">
+              <label class="field-label" for="context">السياق</label>
+              <textarea id="context" maxlength="20000" placeholder="صف المشروع، المتطلبات، القيود، البيانات المتوفرة، أو أي معلومات يجب أن يعتمد عليها القرار..."></textarea>
+              <div class="field-help">يُرسل هذا النص إلى JEV كـ <code>state</code>.</div>
+            </div>
+          </div>
+        </div>
 
-    <section id="result" class="card">
-      <div class="eyebrow">الاختيار الأفضل</div>
-      <div id="winner" class="winner"></div>
-      <div id="confidence" class="confidence"></div>
-      <div id="bars" class="bars"></div>
-      <div id="meta" class="meta"></div>
-    </section>
+        <div class="form-section">
+          <div class="step-row">
+            <div class="step">2</div>
+            <div class="step-content">
+              <label class="field-label" for="question">سؤال القرار</label>
+              <input id="question" maxlength="2000" placeholder="مثال: أي Backend هو الأنسب لهذا المشروع؟" />
+              <div class="field-help">اكتب سؤالًا واحدًا محددًا يطلب اختيار أفضل بديل.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="step-row">
+            <div class="step">3</div>
+            <div class="step-content">
+              <div class="options-toolbar">
+                <div>
+                  <div class="field-label" style="margin-bottom:2px">الخيارات</div>
+                  <div id="optionCount" class="options-count">0 خيارات</div>
+                </div>
+                <button id="addOption" class="btn btn-subtle" type="button">+ إضافة خيار</button>
+              </div>
+              <div id="options" class="options"></div>
+              <div class="field-help">وصف الخيار اختياري، لكنه يساعد JEV على فهم متى يكون هذا الخيار هو الأنسب.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="form-actions">
+            <div class="secure-note">
+              <span class="shield">✓</span>
+              <span>مفتاح TypeSafe محفوظ على السيرفر ولا يظهر للمتصفح.</span>
+            </div>
+            <button id="go" class="btn btn-primary" type="button">اتخذ القرار</button>
+          </div>
+          <div id="error" class="error"></div>
+        </div>
+      </section>
+
+      <aside class="panel result-panel">
+        <div class="panel-header">
+          <div>
+            <h2 class="panel-title">النتيجة</h2>
+            <div class="panel-caption">سيظهر هنا الاختيار واحتمالات كل بديل.</div>
+          </div>
+        </div>
+
+        <div id="emptyState" class="result-empty">
+          <div class="result-icon">→</div>
+          <strong>جاهز لاتخاذ القرار</strong>
+          <span>عبّي البيانات واضغط «اتخذ القرار».</span>
+        </div>
+
+        <div id="result">
+          <div class="result-main">
+            <div class="winner-label">الخيار الأفضل</div>
+            <div id="winner" class="winner"></div>
+            <div id="confidence" class="confidence"></div>
+
+            <h3 class="prob-title">توزيع الاحتمالات</h3>
+            <div id="bars" class="bars"></div>
+          </div>
+
+          <div id="meta" class="meta"></div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="footer-note">Powered by TypeSafe AI · JEV</div>
   </main>
 
 <script>
@@ -121,6 +532,8 @@ const goBtn = document.getElementById("go");
 const exampleBtn = document.getElementById("example");
 const errorBox = document.getElementById("error");
 const resultEl = document.getElementById("result");
+const emptyState = document.getElementById("emptyState");
+const optionCount = document.getElementById("optionCount");
 
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, ch => ({
@@ -128,22 +541,35 @@ function escapeHtml(value) {
   })[ch]);
 }
 
+function updateOptionNumbers(){
+  const rows = [...optionsEl.querySelectorAll(".option")];
+  rows.forEach((row,index)=>{
+    row.querySelector(".option-index").textContent = index + 1;
+  });
+  optionCount.textContent = rows.length + (rows.length === 1 ? " خيار" : " خيارات");
+}
+
 function addOption(label = "", description = "") {
   if (optionsEl.children.length >= 12) return;
   const row = document.createElement("div");
   row.className = "option";
   row.innerHTML =
+    '<span class="option-index"></span>' +
     '<input class="opt-label" maxlength="120" placeholder="اسم الخيار" value="' + escapeHtml(label) + '">' +
-    '<input class="opt-desc" maxlength="1000" placeholder="وصف اختياري: متى يُفضّل هذا الخيار؟" value="' + escapeHtml(description) + '">' +
-    '<button class="danger remove" type="button">حذف</button>';
+    '<input class="opt-desc" maxlength="1000" placeholder="متى يكون هذا الخيار مناسبًا؟" value="' + escapeHtml(description) + '">' +
+    '<button class="btn btn-danger remove" type="button" aria-label="حذف الخيار">حذف</button>';
+
   row.querySelector(".remove").addEventListener("click", () => {
     if (optionsEl.children.length <= 2) {
       showError("لازم يكون عندك خياران على الأقل.");
       return;
     }
     row.remove();
+    updateOptionNumbers();
   });
+
   optionsEl.appendChild(row);
+  updateOptionNumbers();
 }
 
 function showError(message) {
@@ -174,11 +600,11 @@ exampleBtn.addEventListener("click", () => {
   addOption("Firebase", "يفضّل عندما تكون الأولوية لتكامل Google، NoSQL، والمزامنة السريعة مع بنية Firebase الأصلية.");
   clearError();
   resultEl.style.display = "none";
+  emptyState.style.display = "block";
 });
 
 goBtn.addEventListener("click", async () => {
   clearError();
-  resultEl.style.display = "none";
 
   const context = document.getElementById("context").value.trim();
   const question = document.getElementById("question").value.trim();
@@ -208,8 +634,8 @@ goBtn.addEventListener("click", async () => {
     document.getElementById("winner").textContent = data.decision;
     const topProbability = Number(data.probabilities?.[data.decision] || 0);
     document.getElementById("confidence").textContent =
-      "الثقة: " + Math.round((data.confidence || 0) * 100) +
-      "% · احتمال الخيار المختار: " + Math.round(topProbability * 100) + "%";
+      "الثقة " + Math.round((data.confidence || 0) * 100) +
+      "% · احتمال الاختيار " + Math.round(topProbability * 100) + "%";
 
     const bars = document.getElementById("bars");
     bars.innerHTML = "";
@@ -219,31 +645,42 @@ goBtn.addEventListener("click", async () => {
       const row = document.createElement("div");
       row.className = "barline";
 
+      const head = document.createElement("div");
+      head.className = "barhead";
+
       const name = document.createElement("span");
-      name.className = "name";
+      name.className = "barname";
       name.textContent = option;
+
+      const pct = document.createElement("span");
+      pct.className = "barpct";
+      pct.textContent = Math.round(probability * 100) + "%";
+
+      head.append(name, pct);
 
       const track = document.createElement("div");
       track.className = "track";
       const fill = document.createElement("div");
-      fill.className = "fill";
+      fill.className = "fill" + (option === data.decision ? " winner-fill" : "");
       fill.style.width = Math.round(probability * 100) + "%";
       track.appendChild(fill);
 
-      const pct = document.createElement("span");
-      pct.textContent = Math.round(probability * 100) + "%";
-
-      row.append(name, track, pct);
+      row.append(head, track);
       bars.appendChild(row);
     }
 
+    const usage = data.usage || {};
     document.getElementById("meta").innerHTML =
-      "<span>Model: " + escapeHtml(data.model || "—") + "</span>" +
-      "<span>Input tokens: " + (data.usage?.input_tokens ?? "—") + "</span>" +
-      "<span>Output tokens: " + (data.usage?.output_tokens ?? "—") + "</span>";
+      '<div class="meta-item"><div class="meta-key">Model</div><div class="meta-value">' + escapeHtml(data.model || "—") + '</div></div>' +
+      '<div class="meta-item"><div class="meta-key">Input tokens</div><div class="meta-value">' + (usage.input_tokens ?? "—") + '</div></div>' +
+      '<div class="meta-item"><div class="meta-key">Output tokens</div><div class="meta-value">' + (usage.output_tokens ?? "—") + '</div></div>' +
+      '<div class="meta-item"><div class="meta-key">Options</div><div class="meta-value">' + data.options.length + '</div></div>';
 
+    emptyState.style.display = "none";
     resultEl.style.display = "block";
-    resultEl.scrollIntoView({behavior:"smooth", block:"start"});
+    if (window.innerWidth < 900) {
+      document.querySelector(".result-panel").scrollIntoView({behavior:"smooth",block:"start"});
+    }
   } catch (err) {
     showError(err.message || String(err));
   } finally {
