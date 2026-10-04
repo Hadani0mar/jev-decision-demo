@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>JEV Decision Studio</title>
-  <meta name="description" content="واجهة احترافية لاتخاذ القرارات باستخدام TypeSafe AI JEV." />
+  <meta name="description" content="واجهة احترافية لاتخاذ القرارات باستخدام TypeSafe AI JEV." />\n  <link rel="preconnect" href="https://fonts.googleapis.com">\n  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root{
       --ds-background-brand-bold:#0c66e4;
@@ -39,7 +39,7 @@
 
       --motion:200ms cubic-bezier(.15,1,.3,1);
 
-      --font-body:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Tahoma,Arial,sans-serif;
+      --font-body:"Noto Sans Arabic",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Tahoma,Arial,sans-serif;
       --font-mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
     }
 
@@ -501,7 +501,20 @@
           </div>
         </div>
 
-        <div id="emptyState" class="result-empty">
+
+        <div id="decisionProgress" class="decision-progress" role="status" aria-live="polite">
+          <div class="progress-head">
+            <div class="progress-copy">
+              <div id="progressTitle" class="progress-title">JEV يتخذ القرار</div>
+              <div id="progressStage" class="progress-stage">تحليل السياق والمتطلبات...</div>
+            </div>
+            <span class="thinking-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+          </div>
+          <div class="decision-track" aria-hidden="true">
+            <div class="decision-runner"></div>
+          </div>
+        </div>
+\n        <div id="emptyState" class="result-empty">
           <div class="result-icon">→</div>
           <strong>جاهز لاتخاذ القرار</strong>
           <span>عبّي البيانات واضغط «اتخذ القرار».</span>
@@ -533,9 +546,44 @@ const exampleBtn = document.getElementById("example");
 const errorBox = document.getElementById("error");
 const resultEl = document.getElementById("result");
 const emptyState = document.getElementById("emptyState");
-const optionCount = document.getElementById("optionCount");
+const optionCount = document.getElementById("optionCount");\nconst decisionProgress = document.getElementById("decisionProgress");\nconst progressTitle = document.getElementById("progressTitle");\nconst progressStage = document.getElementById("progressStage");\nlet progressTimer = null;
 
-function escapeHtml(value) {
+
+function startDecisionProgress() {
+  clearInterval(progressTimer);
+  decisionProgress.classList.remove("complete", "failed");
+  decisionProgress.classList.add("active");
+  emptyState.style.display = "none";
+  resultEl.style.display = "none";
+  progressTitle.textContent = "JEV يتخذ القرار";
+
+  const stages = [
+    "تحليل السياق والمتطلبات...",
+    "مقارنة الخيارات والمعايير...",
+    "ترجيح البدائل...",
+    "حساب الثقة في القرار..."
+  ];
+  let index = 0;
+  progressStage.textContent = stages[index];
+  progressTimer = setInterval(() => {
+    index = (index + 1) % stages.length;
+    progressStage.style.opacity = "0";
+    setTimeout(() => {
+      progressStage.textContent = stages[index];
+      progressStage.style.opacity = "1";
+    }, 120);
+  }, 900);
+}
+
+function finishDecisionProgress(ok = true) {
+  clearInterval(progressTimer);
+  progressTimer = null;
+  decisionProgress.classList.toggle("complete", ok);
+  decisionProgress.classList.toggle("failed", !ok);
+  progressTitle.textContent = ok ? "تم اتخاذ القرار" : "تعذر إكمال القرار";
+  progressStage.textContent = ok ? "تمت مقارنة الخيارات وحساب النتيجة." : "راجع الخطأ وحاول من جديد.";
+}
+\nfunction escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, ch => ({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
   })[ch]);
