@@ -3,50 +3,111 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>JEV Decision Demo</title>
-  <meta name="description" content="تجربة مباشرة لنموذج TypeSafe AI JEV لاتخاذ قرار من نص." />
+  <title>JEV Decision Lab</title>
+  <meta name="description" content="اختبر قرارات JEV بين أي مجموعة خيارات مع احتمالات وثقة القرار." />
   <style>
-    :root{font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color-scheme:dark}
+    :root{
+      font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Tahoma,sans-serif;
+      color-scheme:dark;
+      --bg:#09090b;--panel:#111114;--panel2:#18181b;--line:#2b2b31;
+      --muted:#a1a1aa;--soft:#71717a;--text:#fafafa;--accent:#fafafa;
+    }
     *{box-sizing:border-box}
-    body{margin:0;min-height:100vh;background:#09090b;color:#fafafa;display:grid;place-items:center;padding:24px}
-    .shell{width:min(760px,100%);background:#111114;border:1px solid #27272a;border-radius:24px;padding:28px;box-shadow:0 24px 80px rgba(0,0,0,.35)}
-    .eyebrow{font-size:13px;color:#a1a1aa;margin-bottom:10px}
-    h1{margin:0 0 8px;font-size:clamp(28px,5vw,44px);letter-spacing:-.03em}
-    .sub{margin:0 0 24px;color:#a1a1aa;line-height:1.7}
-    textarea{width:100%;min-height:190px;resize:vertical;border:1px solid #3f3f46;border-radius:16px;background:#18181b;color:#fff;padding:16px;font:inherit;line-height:1.7;outline:none}
-    textarea:focus{border-color:#71717a;box-shadow:0 0 0 3px rgba(113,113,122,.15)}
-    .row{display:flex;gap:12px;align-items:center;margin-top:14px;flex-wrap:wrap}
-    button{border:0;border-radius:14px;padding:12px 20px;font-weight:700;font-size:15px;cursor:pointer;background:#fafafa;color:#09090b}
+    body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);padding:28px}
+    .shell{width:min(880px,100%);margin:0 auto}
+    header{padding:14px 2px 24px;border-bottom:1px solid var(--line);margin-bottom:24px}
+    .eyebrow{font-size:13px;color:var(--muted);margin-bottom:8px}
+    h1{margin:0 0 8px;font-size:clamp(30px,5vw,48px);letter-spacing:-.04em}
+    .sub{margin:0;color:var(--muted);line-height:1.8;max-width:760px}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:22px;margin-bottom:18px}
+    label{display:block;font-weight:700;margin-bottom:9px}
+    .help{font-size:12px;color:var(--soft);margin-top:7px;line-height:1.6}
+    input,textarea{
+      width:100%;border:1px solid #3f3f46;border-radius:14px;background:var(--panel2);
+      color:#fff;padding:13px 14px;font:inherit;outline:none
+    }
+    input:focus,textarea:focus{border-color:#71717a;box-shadow:0 0 0 3px rgba(113,113,122,.14)}
+    textarea{min-height:130px;resize:vertical;line-height:1.7}
+    #context{min-height:170px}
+    .section-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+    .section-title h2{font-size:18px;margin:0}
+    .options{display:grid;gap:12px}
+    .option{
+      display:grid;grid-template-columns:1fr 1.5fr auto;gap:10px;align-items:start;
+      padding:12px;border:1px solid var(--line);border-radius:16px;background:#141417
+    }
+    .option input{min-width:0}
+    button{
+      border:0;border-radius:13px;padding:11px 16px;font-weight:750;font-size:14px;cursor:pointer
+    }
+    button.primary{background:var(--accent);color:#09090b;padding:13px 21px}
+    button.secondary{background:#27272a;color:#fafafa;border:1px solid #3f3f46}
+    button.ghost{background:transparent;color:#a1a1aa;border:1px solid #3f3f46}
+    button.danger{background:transparent;color:#fca5a5;border:1px solid #4c1d1d;padding:11px 12px}
     button:disabled{opacity:.5;cursor:not-allowed}
-    .hint{font-size:12px;color:#71717a}
-    #result{display:none;margin-top:22px;border-top:1px solid #27272a;padding-top:22px}
-    .decision{font-size:30px;font-weight:800;margin:0 0 6px}
-    .confidence{color:#a1a1aa;margin-bottom:18px}
-    .bars{display:grid;gap:10px}
-    .barline{display:grid;grid-template-columns:86px 1fr 54px;gap:10px;align-items:center}
-    .track{height:9px;background:#27272a;border-radius:999px;overflow:hidden}
-    .fill{height:100%;background:#e4e4e7;border-radius:999px}
-    .meta{margin-top:18px;font-size:12px;color:#71717a;display:flex;gap:16px;flex-wrap:wrap}
-    .error{margin-top:16px;color:#fca5a5;background:#2a1111;border:1px solid #7f1d1d;padding:12px 14px;border-radius:12px;display:none;white-space:pre-wrap}
+    .actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px}
+    .error{display:none;margin-top:14px;color:#fecaca;background:#2a1111;border:1px solid #7f1d1d;padding:12px 14px;border-radius:12px;white-space:pre-wrap}
+    #result{display:none}
+    .winner{font-size:clamp(30px,6vw,52px);font-weight:850;letter-spacing:-.04em;margin:4px 0 6px}
+    .confidence{color:var(--muted);margin-bottom:20px}
+    .bars{display:grid;gap:12px}
+    .barline{display:grid;grid-template-columns:minmax(110px,180px) 1fr 58px;gap:12px;align-items:center}
+    .name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .track{height:10px;background:#2b2b31;border-radius:999px;overflow:hidden}
+    .fill{height:100%;background:#e4e4e7;border-radius:999px;transition:width .35s ease}
+    .meta{margin-top:20px;padding-top:16px;border-top:1px solid var(--line);display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--soft)}
+    .badge{display:inline-flex;align-items:center;gap:7px;border:1px solid #3f3f46;border-radius:999px;padding:7px 10px;color:#d4d4d8;font-size:12px}
+    @media(max-width:700px){
+      body{padding:16px}.card{padding:16px}.option{grid-template-columns:1fr}
+      .option .danger{justify-self:start}.barline{grid-template-columns:92px 1fr 48px}
+    }
   </style>
 </head>
 <body>
   <main class="shell">
-    <div class="eyebrow">TypeSafe AI · JEV</div>
-    <h1>شن القرار؟</h1>
-    <p class="sub">اكتب موقف أو إجراء، وJEV يختار بين <b>تنفيذ</b>، <b>مراجعة</b>، أو <b>رفض</b> مع احتمالات كل قرار.</p>
+    <header>
+      <div class="eyebrow">TypeSafe AI · JEV</div>
+      <h1>JEV Decision Lab</h1>
+      <p class="sub">اكتب السياق، حدّد سؤال القرار، وأضف الخيارات. JEV يختار خيارًا واحدًا ويعرض توزيع الاحتمالات والثقة في القرار.</p>
+    </header>
 
-    <textarea id="input" maxlength="12000" placeholder="مثال: العميل طلب استرجاع المبلغ بعد ما تم خصمه مرتين..."></textarea>
+    <section class="card">
+      <label for="context">1) السياق</label>
+      <textarea id="context" maxlength="20000" placeholder="صف المشروع أو الحالة أو المعلومات التي يجب أن يعتمد عليها القرار..."></textarea>
+      <div class="help">هذا هو <code>state</code> الذي يقرأه JEV قبل اتخاذ القرار.</div>
+    </section>
 
-    <div class="row">
-      <button id="go">خذ القرار</button>
-      <span class="hint">القرار احتمالي وليس نصًا مولدًا.</span>
-    </div>
+    <section class="card">
+      <label for="question">2) سؤال القرار</label>
+      <input id="question" maxlength="2000" placeholder="مثال: أي Backend هو الأنسب لهذا المشروع؟" />
+      <div class="help">اكتب سؤالًا واحدًا واضحًا يطلب اختيار أفضل خيار.</div>
+    </section>
 
-    <div id="error" class="error"></div>
+    <section class="card">
+      <div class="section-title">
+        <div>
+          <h2>3) الخيارات</h2>
+          <div class="help">يمكن إضافة وصف يوضح متى يجب اختيار كل خيار.</div>
+        </div>
+        <button id="addOption" class="secondary" type="button">+ إضافة خيار</button>
+      </div>
+      <div id="options" class="options"></div>
+      <div class="actions">
+        <button id="example" class="ghost" type="button">تحميل مثال Supabase / Firebase</button>
+      </div>
+    </section>
 
-    <section id="result">
-      <div id="decision" class="decision"></div>
+    <section class="card">
+      <div class="actions" style="margin-top:0">
+        <button id="go" class="primary" type="button">اتخذ القرار</button>
+        <span class="badge">المفتاح محفوظ Server-side</span>
+      </div>
+      <div id="error" class="error"></div>
+    </section>
+
+    <section id="result" class="card">
+      <div class="eyebrow">الاختيار الأفضل</div>
+      <div id="winner" class="winner"></div>
       <div id="confidence" class="confidence"></div>
       <div id="bars" class="bars"></div>
       <div id="meta" class="meta"></div>
@@ -54,60 +115,145 @@
   </main>
 
 <script>
-const labels = { execute: "تنفيذ", review: "مراجعة", reject: "رفض" };
-const input = document.getElementById("input");
-const go = document.getElementById("go");
-const result = document.getElementById("result");
+const optionsEl = document.getElementById("options");
+const addBtn = document.getElementById("addOption");
+const goBtn = document.getElementById("go");
+const exampleBtn = document.getElementById("example");
 const errorBox = document.getElementById("error");
+const resultEl = document.getElementById("result");
 
-go.addEventListener("click", async () => {
-  const text = input.value.trim();
-  if (!text) return;
-  go.disabled = true;
-  go.textContent = "جاري التقييم...";
-  result.style.display = "none";
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, ch => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  })[ch]);
+}
+
+function addOption(label = "", description = "") {
+  if (optionsEl.children.length >= 12) return;
+  const row = document.createElement("div");
+  row.className = "option";
+  row.innerHTML =
+    '<input class="opt-label" maxlength="120" placeholder="اسم الخيار" value="' + escapeHtml(label) + '">' +
+    '<input class="opt-desc" maxlength="1000" placeholder="وصف اختياري: متى يُفضّل هذا الخيار؟" value="' + escapeHtml(description) + '">' +
+    '<button class="danger remove" type="button">حذف</button>';
+  row.querySelector(".remove").addEventListener("click", () => {
+    if (optionsEl.children.length <= 2) {
+      showError("لازم يكون عندك خياران على الأقل.");
+      return;
+    }
+    row.remove();
+  });
+  optionsEl.appendChild(row);
+}
+
+function showError(message) {
+  errorBox.textContent = message;
+  errorBox.style.display = "block";
+}
+
+function clearError() {
   errorBox.style.display = "none";
+  errorBox.textContent = "";
+}
+
+function readOptions() {
+  return [...optionsEl.querySelectorAll(".option")].map(row => ({
+    label: row.querySelector(".opt-label").value.trim(),
+    description: row.querySelector(".opt-desc").value.trim()
+  }));
+}
+
+addBtn.addEventListener("click", () => addOption());
+
+exampleBtn.addEventListener("click", () => {
+  document.getElementById("context").value =
+    "تطبيق لإدارة متجر ومخزون ومبيعات. يحتاج PostgreSQL وعلاقات قوية بين الجداول، تقارير واستعلامات SQL معقدة، Authentication، Realtime، تخزين صور وملفات، صلاحيات متعددة للمستخدمين، وتكاملًا سهلًا مع React وFlutter. المشروع متوقع أن يكبر ويحتوي على تقارير مالية ومخزون وديون.";
+  document.getElementById("question").value = "أي Backend هو الأنسب لهذا المشروع؟";
+  optionsEl.innerHTML = "";
+  addOption("Supabase", "يفضّل عندما تكون قاعدة البيانات العلائقية وSQL وPostgreSQL والتقارير المعقدة جزءًا أساسيًا من المشروع.");
+  addOption("Firebase", "يفضّل عندما تكون الأولوية لتكامل Google، NoSQL، والمزامنة السريعة مع بنية Firebase الأصلية.");
+  clearError();
+  resultEl.style.display = "none";
+});
+
+goBtn.addEventListener("click", async () => {
+  clearError();
+  resultEl.style.display = "none";
+
+  const context = document.getElementById("context").value.trim();
+  const question = document.getElementById("question").value.trim();
+  const options = readOptions();
+
+  if (!question) return showError("اكتب سؤال القرار.");
+  if (options.length < 2) return showError("أضف خيارين على الأقل.");
+  if (options.some(o => !o.label)) return showError("كل خيار لازم يكون له اسم.");
+
+  const normalized = options.map(o => o.label.toLocaleLowerCase());
+  if (new Set(normalized).size !== normalized.length) {
+    return showError("أسماء الخيارات لازم تكون مختلفة.");
+  }
+
+  goBtn.disabled = true;
+  goBtn.textContent = "JEV يقيّم الخيارات...";
 
   try {
     const res = await fetch("/api/decide", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text })
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({context, question, options})
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "فشل الطلب");
+    if (!res.ok) throw new Error(data.error || "فشل الطلب.");
 
-    document.getElementById("decision").textContent = labels[data.decision] || data.decision;
+    document.getElementById("winner").textContent = data.decision;
+    const topProbability = Number(data.probabilities?.[data.decision] || 0);
     document.getElementById("confidence").textContent =
-      "الثقة في القرار: " + Math.round((data.confidence || 0) * 100) + "%";
+      "الثقة: " + Math.round((data.confidence || 0) * 100) +
+      "% · احتمال الخيار المختار: " + Math.round(topProbability * 100) + "%";
 
     const bars = document.getElementById("bars");
     bars.innerHTML = "";
-    for (const key of ["execute","review","reject"]) {
-      const p = Number(data.probabilities?.[key] || 0);
-      const line = document.createElement("div");
-      line.className = "barline";
-      line.innerHTML =
-        '<span>' + labels[key] + '</span>' +
-        '<div class="track"><div class="fill" style="width:' + Math.round(p*100) + '%"></div></div>' +
-        '<span>' + Math.round(p*100) + '%</span>';
-      bars.appendChild(line);
+
+    for (const option of data.options) {
+      const probability = Number(data.probabilities?.[option] || 0);
+      const row = document.createElement("div");
+      row.className = "barline";
+
+      const name = document.createElement("span");
+      name.className = "name";
+      name.textContent = option;
+
+      const track = document.createElement("div");
+      track.className = "track";
+      const fill = document.createElement("div");
+      fill.className = "fill";
+      fill.style.width = Math.round(probability * 100) + "%";
+      track.appendChild(fill);
+
+      const pct = document.createElement("span");
+      pct.textContent = Math.round(probability * 100) + "%";
+
+      row.append(name, track, pct);
+      bars.appendChild(row);
     }
 
     document.getElementById("meta").innerHTML =
-      "<span>Model: " + data.model + "</span>" +
+      "<span>Model: " + escapeHtml(data.model || "—") + "</span>" +
       "<span>Input tokens: " + (data.usage?.input_tokens ?? "—") + "</span>" +
       "<span>Output tokens: " + (data.usage?.output_tokens ?? "—") + "</span>";
 
-    result.style.display = "block";
+    resultEl.style.display = "block";
+    resultEl.scrollIntoView({behavior:"smooth", block:"start"});
   } catch (err) {
-    errorBox.textContent = err.message || String(err);
-    errorBox.style.display = "block";
+    showError(err.message || String(err));
   } finally {
-    go.disabled = false;
-    go.textContent = "خذ القرار";
+    goBtn.disabled = false;
+    goBtn.textContent = "اتخذ القرار";
   }
 });
+
+addOption();
+addOption();
 </script>
 </body>
 </html>
