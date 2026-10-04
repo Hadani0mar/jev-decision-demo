@@ -4,7 +4,10 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>JEV Decision Studio</title>
-  <meta name="description" content="واجهة احترافية لاتخاذ القرارات باستخدام TypeSafe AI JEV." />\n  <link rel="preconnect" href="https://fonts.googleapis.com">\n  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <meta name="description" content="واجهة احترافية لاتخاذ القرارات باستخدام TypeSafe AI JEV." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root{
       --ds-background-brand-bold:#0c66e4;
@@ -317,6 +320,100 @@
       white-space:pre-wrap;
     }
 
+
+    .decision-progress{
+      display:none;
+      padding:var(--space-6);
+      border-bottom:1px solid var(--ds-border);
+      background:linear-gradient(180deg,#fff 0%,#fbfcfd 100%);
+    }
+    .decision-progress.active{display:block}
+    .progress-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:var(--space-4);
+      margin-bottom:var(--space-4);
+    }
+    .progress-copy{min-width:0}
+    .progress-title{
+      font-size:14px;
+      line-height:20px;
+      font-weight:700;
+      color:var(--ds-text);
+      margin-bottom:2px;
+    }
+    .progress-stage{
+      font-size:11px;
+      line-height:16px;
+      color:var(--ds-text-subtlest);
+      min-height:16px;
+      transition:opacity var(--motion);
+    }
+    .thinking-dots{
+      display:inline-flex;
+      direction:ltr;
+      align-items:center;
+      gap:4px;
+      padding-inline:2px;
+    }
+    .thinking-dots i{
+      width:5px;
+      height:5px;
+      border-radius:50%;
+      background:var(--ds-background-brand-bold);
+      animation:dotPulse 1.05s ease-in-out infinite;
+    }
+    .thinking-dots i:nth-child(2){animation-delay:.14s}
+    .thinking-dots i:nth-child(3){animation-delay:.28s}
+    .decision-track{
+      position:relative;
+      height:8px;
+      overflow:hidden;
+      border-radius:var(--radius-pill);
+      background:#dcdfe4;
+    }
+    .decision-runner{
+      position:absolute;
+      top:0;
+      bottom:0;
+      right:0;
+      width:55%;
+      transform:translateX(115%);
+      background:linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(12,102,228,.18) 18%,
+        var(--ds-background-brand-bold) 50%,
+        rgba(12,102,228,.18) 82%,
+        transparent 100%
+      );
+      animation:decisionSweep 1.35s cubic-bezier(.4,0,.2,1) infinite;
+    }
+    .decision-progress.complete .decision-runner{
+      width:100%;
+      transform:none;
+      animation:none;
+      background:var(--ds-success);
+    }
+    .decision-progress.failed .decision-runner{
+      width:100%;
+      transform:none;
+      animation:none;
+      background:var(--ds-danger);
+    }
+    @keyframes decisionSweep{
+      0%{transform:translateX(115%)}
+      100%{transform:translateX(-190%)}
+    }
+    @keyframes dotPulse{
+      0%,70%,100%{transform:translateY(0);opacity:.35}
+      35%{transform:translateY(-3px);opacity:1}
+    }
+    @media (prefers-reduced-motion:reduce){
+      .decision-runner,.thinking-dots i{animation:none}
+    }
+
     .result-panel{
       position:sticky;
       top:88px;
@@ -514,7 +611,8 @@
             <div class="decision-runner"></div>
           </div>
         </div>
-\n        <div id="emptyState" class="result-empty">
+
+        <div id="emptyState" class="result-empty">
           <div class="result-icon">→</div>
           <strong>جاهز لاتخاذ القرار</strong>
           <span>عبّي البيانات واضغط «اتخذ القرار».</span>
@@ -546,7 +644,11 @@ const exampleBtn = document.getElementById("example");
 const errorBox = document.getElementById("error");
 const resultEl = document.getElementById("result");
 const emptyState = document.getElementById("emptyState");
-const optionCount = document.getElementById("optionCount");\nconst decisionProgress = document.getElementById("decisionProgress");\nconst progressTitle = document.getElementById("progressTitle");\nconst progressStage = document.getElementById("progressStage");\nlet progressTimer = null;
+const optionCount = document.getElementById("optionCount");
+const decisionProgress = document.getElementById("decisionProgress");
+const progressTitle = document.getElementById("progressTitle");
+const progressStage = document.getElementById("progressStage");
+let progressTimer = null;
 
 
 function startDecisionProgress() {
@@ -583,7 +685,8 @@ function finishDecisionProgress(ok = true) {
   progressTitle.textContent = ok ? "تم اتخاذ القرار" : "تعذر إكمال القرار";
   progressStage.textContent = ok ? "تمت مقارنة الخيارات وحساب النتيجة." : "راجع الخطأ وحاول من جديد.";
 }
-\nfunction escapeHtml(value) {
+
+function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, ch => ({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
   })[ch]);
@@ -647,6 +750,9 @@ exampleBtn.addEventListener("click", () => {
   addOption("Supabase", "يفضّل عندما تكون قاعدة البيانات العلائقية وSQL وPostgreSQL والتقارير المعقدة جزءًا أساسيًا من المشروع.");
   addOption("Firebase", "يفضّل عندما تكون الأولوية لتكامل Google، NoSQL، والمزامنة السريعة مع بنية Firebase الأصلية.");
   clearError();
+  clearInterval(progressTimer);
+  progressTimer = null;
+  decisionProgress.classList.remove("active", "complete", "failed");
   resultEl.style.display = "none";
   emptyState.style.display = "block";
 });
@@ -669,6 +775,7 @@ goBtn.addEventListener("click", async () => {
 
   goBtn.disabled = true;
   goBtn.textContent = "JEV يقيّم الخيارات...";
+  startDecisionProgress();
 
   try {
     const res = await fetch("/api/decide", {
@@ -724,12 +831,17 @@ goBtn.addEventListener("click", async () => {
       '<div class="meta-item"><div class="meta-key">Output tokens</div><div class="meta-value">' + (usage.output_tokens ?? "—") + '</div></div>' +
       '<div class="meta-item"><div class="meta-key">Options</div><div class="meta-value">' + data.options.length + '</div></div>';
 
+    finishDecisionProgress(true);
+    await new Promise(resolve => setTimeout(resolve, 320));
+    decisionProgress.classList.remove("active");
     emptyState.style.display = "none";
     resultEl.style.display = "block";
     if (window.innerWidth < 900) {
       document.querySelector(".result-panel").scrollIntoView({behavior:"smooth",block:"start"});
     }
   } catch (err) {
+    finishDecisionProgress(false);
+    setTimeout(() => decisionProgress.classList.remove("active"), 700);
     showError(err.message || String(err));
   } finally {
     goBtn.disabled = false;
